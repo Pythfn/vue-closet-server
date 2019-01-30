@@ -2,8 +2,9 @@ const router = require('koa-router')()
 
 router.prefix('/api')
 
-router.post('/add', function (ctx, next) {
-  ctx.body = 'this is a users response!'
+router.post('/additem', function (ctx, next) {
+  const req = ctx.request.body
+  ctx.body = req
 })
 
 module.exports = router
