@@ -5,11 +5,13 @@ const json = require('koa-json')
 const onerror = require('koa-onerror')
 const bodyparser = require('koa-bodyparser')
 const logger = require('koa-logger')
+const koajwt = require('koa-jwt')
 //  const cors = require('koa-cors')
 
 const index = require('./routes/index')
 const users = require('./routes/users')
 const sql = require('./routes/sql')
+const sc = require('./config')
 
 // error handler
 onerror(app)
@@ -24,6 +26,24 @@ app.use(require('koa-static')(__dirname + '/public'))
 
 app.use(views(__dirname + '/views', {
   extension: 'ejs'
+}))
+
+//  koa-jwt验证
+app.use((ctx, next) => {
+  return next().catch((err) => {
+    if (err.status === 401) {
+      ctx.status = 401
+      ctx.body = 'WARNING : Protected resource, use Authorization header to get access\n\n'
+    } else {
+      throw err
+    }
+  })
+})
+
+app.use(koajwt({
+  secret: sc.jwtsecret
+}).unless({
+  path:[/\/signin/, /\/signup/]
 }))
 
 // logger
