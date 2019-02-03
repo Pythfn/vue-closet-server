@@ -2,6 +2,8 @@ const router = require('koa-router')()
 const jwt = require('jsonwebtoken')
 const db = require('../lib/dbquery.js')
 const getuserid = require('./utils/userid.js')
+const jwtverify = require('./utils/jwtverify')
+const sc = require('../config')
 
 const jwtsecret = '9af99e8611d033f016eb8aa5d5b6a3df'
 
@@ -76,6 +78,7 @@ router.post('/signin', async (ctx, next) => {
           code: 1,
           msg: '登陆成功',
           username,
+          userid: res[0].userid,
           token
         }
       } else {
@@ -92,6 +95,27 @@ router.post('/signin', async (ctx, next) => {
       msg: '服务器错误'
     }
   }
+})
+
+//  用户登陆状态验证
+router.post('/userinfo', async (ctx, next) => {
+  const token = ctx.header.authorization.split(' ')[1]
+  const verify = jwtverify(token, sc.jwtsecret)
+  await verify.then((data) => {
+    const { username, userid } = data
+    ctx.body = {
+      code: 1,
+      msg: '登陆信息有效',
+      username,
+      userid,
+      token
+    }
+  }).catch((err) => {
+    ctx.body = {
+      code: -1,
+      msg: '请重新登陆'
+    }
+  })
 })
 
 module.exports = router
