@@ -4,6 +4,7 @@ const sc = require('../config')
 const db = require('../lib/dbquery.js')
 router.prefix('/api')
 
+//  添加商品接口
 router.post('/additem', async (ctx, next) => {
   //  校验token，取到userid
   const token = ctx.header.authorization.split(' ')[1]
@@ -38,6 +39,42 @@ router.post('/additem', async (ctx, next) => {
       msg: '请重新登陆'
     }
   })
+})
+
+
+//  获取商品接口
+router.post('/getitems', async (ctx, next) => {
+  //  校验token，取到userid
+  const token = ctx.header.authorization.split(' ')[1]
+  await jwtverify(token, sc.jwtsecret).then(async (decoded) => {
+    const userid = decoded.userid
+    if (userid) {
+      try {
+        const sqlGet = 'SELECT * FROM vcitems WHERE userid = ?'
+        await db.query(sqlGet, userid).then((itemlist) => {
+          ctx.body = {
+            code: 1,
+            msg:'数据获取成功',
+            userid,
+            itemlist
+          }
+        })
+      } catch (err) {
+        console.log('###SQLGETERROR### ' + err)
+        ctx.body = {
+          code: -1,
+          msg: '数据获取失败'
+        }
+      }
+    }
+  }).catch((err) => {
+    console.log('###JWTERROR### ' + err)
+    ctx.body = {
+      code: -1,
+      msg: '请重新登陆'
+    }
+  })
+
 })
 
 module.exports = router
