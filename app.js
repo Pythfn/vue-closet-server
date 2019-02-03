@@ -43,7 +43,7 @@ app.use((ctx, next) => {
 app.use(koajwt({
   secret: sc.jwtsecret
 }).unless({
-  path:[/\/signin/, /\/signup/]
+  path:[/\/signin/, /\/signup/,/\/userinfo/]
 }))
 
 // logger
