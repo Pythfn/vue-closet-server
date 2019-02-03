@@ -39,13 +39,13 @@ app.use((ctx, next) => {
     }
   })
 })
-
+/*
 app.use(koajwt({
   secret: sc.jwtsecret
 }).unless({
   path:[/\/signin/, /\/signup/,/\/userinfo/]
 }))
-
+*/
 // logger
 app.use(async (ctx, next) => {
   const start = new Date()

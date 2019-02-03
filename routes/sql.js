@@ -2,6 +2,7 @@ const router = require('koa-router')()
 const jwtverify = require('./utils/jwtverify')
 const sc = require('../config')
 const db = require('../lib/dbquery.js')
+const toShortUrl = require('./utils/toShortUrl')
 router.prefix('/api')
 
 //  添加商品接口
@@ -11,11 +12,14 @@ router.post('/additem', async (ctx, next) => {
   const verify = jwtverify(token, sc.jwtsecret)
   await verify.then(async (decoded) => {
     const userid = decoded.userid
-    const { name, price, cost, rate, color, colorcode, tags, pic, picurl, remark } = ctx.request.body
+    let { name, price, cost, type, size, rate, color, colorcode, tags, pic, picurl, itemlink, remark } = ctx.request.body
+    //  转短链接
+    picurl = await toShortUrl(picurl)
+
     if (userid) {
       try {
-        const sqlAdd = 'INSERT INTO vcitems(NAME, price, cost, rate, color, colorcode, tags,  pic, picurl, remark, isdelete, userinfo, userid) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-        const sqlAddValues = [name, price, cost, rate, color, colorcode, tags, pic, picurl, remark, 0, null, userid]
+        const sqlAdd = 'INSERT INTO vcitems(NAME, price, cost, type, size, rate, color, colorcode, tags,  pic, picurl, itemlink, remark, isdelete, userinfo, userid) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        const sqlAddValues = [name, price, cost, type, size, rate, color, colorcode, tags, pic, picurl, itemlink, remark, 0, null, userid]
         const dbAdd = db.query(sqlAdd, sqlAddValues)
         await dbAdd.then((res) => {
           ctx.body = {
@@ -54,7 +58,7 @@ router.post('/getitems', async (ctx, next) => {
         await db.query(sqlGet, userid).then((itemlist) => {
           ctx.body = {
             code: 1,
-            msg:'数据获取成功',
+            msg: '数据获取成功',
             userid,
             itemlist
           }
