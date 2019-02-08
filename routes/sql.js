@@ -18,7 +18,7 @@ router.post('/additem', async (ctx, next) => {
 
     if (userid) {
       try {
-        const sqlAdd = 'INSERT INTO vcitems(NAME, price, cost, type, size, rate, color, colorcode, tags,  pic, picurl, itemlink, remark, isdelete, userinfo, userid) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        const sqlAdd = 'INSERT INTO vcitems(name, price, cost, type, size, rate, color, colorcode, tags,  pic, picurl, itemlink, remark, isdelete, userinfo, userid) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         const sqlAddValues = [name, price, cost, type, size, rate, color, colorcode, tags, pic, picurl, itemlink, remark, 0, null, userid]
         const dbAdd = db.query(sqlAdd, sqlAddValues)
         await dbAdd.then((res) => {
@@ -45,6 +45,41 @@ router.post('/additem', async (ctx, next) => {
   })
 })
 
+router.post('/updateItem', async (ctx, next) => {
+  //  校验token，取到userid
+  const token = ctx.header.authorization.split(' ')[1]
+  const verify = jwtverify(token, sc.jwtsecret)
+  await verify.then(async (decoded) => {
+    const userid = decoded.userid
+    let { itemid, name, price, cost, type, size, rate, color, colorcode, tags, pic, picurl, itemlink, remark } = ctx.request.body
+    picurl = await toShortUrl(picurl)
+    if (userid) {
+      try {
+        let sqlUpdate = "UPDATE vcitems SET name = ?, price = ?, cost = ?, type = ?, size = ?, rate = ?, color = ?, colorcode = ?, tags = ?, pic = ?, picurl = ?, itemlink = ?, remark = ? WHERE itemid = ?"
+        let sqlUpdateValues = [name, price, cost, type, size, rate, color, colorcode, tags, pic, picurl, itemlink, remark, itemid]
+        await db.query(sqlUpdate, sqlUpdateValues).then((res) => {
+          ctx.body = {
+            code: 1,
+            msg: '修改成功',
+            itemname: name
+          }
+        })
+      } catch (err) {
+        console.log('###SQLADDERROR### ' + err)
+        ctx.body = {
+          code: -1,
+          msg: '修改失败，提交数据有误'
+        }
+      }
+    }
+  }).catch((err) => {
+    console.log('###JWTERROR### ' + err)
+    ctx.body = {
+      code: -1,
+      msg: '请重新登陆'
+    }
+  })
+})
 
 //  获取商品接口
 router.post('/getitems', async (ctx, next) => {
