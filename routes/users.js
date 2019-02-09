@@ -2,6 +2,7 @@ const router = require('koa-router')()
 const jwt = require('jsonwebtoken')
 const db = require('../lib/dbquery.js')
 const getuserid = require('./utils/userid.js')
+const getCode = require('./utils/getCode')
 const jwtverify = require('./utils/jwtverify')
 const sc = require('../config')
 
@@ -60,6 +61,21 @@ router.post('/signup', async (ctx, next) => {
   }
 })
 
+//  注册验证码接口
+router.post('/verify', async (ctx, next) => {
+  const { username, email } = ctx.request.body
+  let sqlbfv = `SELECT expire FROM mail WHERE username = ${username} AND email = ${email}`
+  await db.query(sqlbfv).then(res => {
+    if (res.length === 0) {
+
+    }
+  })
+  ctx.body = {
+    code: 1,
+    vcode: getCode()
+  }
+})
+
 //  登陆接口
 router.post('/signin', async (ctx, next) => {
   const { username, password } = ctx.request.body
@@ -68,7 +84,6 @@ router.post('/signin', async (ctx, next) => {
   try {
     const dbIn = db.query(sqlIn, sqlInValues)
     await dbIn.then((res) => {
-      console.log(res.length)
       if (res.length !== 0) {
         const token = jwt.sign({
           username,
@@ -81,7 +96,9 @@ router.post('/signin', async (ctx, next) => {
           userid: res[0].userid,
           token
         }
-      } else {
+      } else
+
+      if (expire) {
         ctx.body = {
           code: -1,
           msg: '用户名或密码有误'

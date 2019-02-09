@@ -8,7 +8,6 @@ const logger = require('koa-logger')
 const koajwt = require('koa-jwt')
 //  const cors = require('koa-cors')
 
-const index = require('./routes/index')
 const users = require('./routes/users')
 const sql = require('./routes/sql')
 const sc = require('./config')
@@ -43,7 +42,7 @@ app.use((ctx, next) => {
 app.use(koajwt({
   secret: sc.jwtsecret
 }).unless({
-  path:[/\/signin/, /\/signup/,/\/userinfo/]
+  path:[/\/signin/, /\/signup/,/\/userinfo/,/\/verify/]
 }))
 
 // logger
@@ -55,7 +54,6 @@ app.use(async (ctx, next) => {
 })
 
 // routes
-app.use(index.routes(), index.allowedMethods())
 app.use(users.routes(), users.allowedMethods())
 app.use(sql.routes(), sql.allowedMethods())
 
