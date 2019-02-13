@@ -5,6 +5,7 @@ const getuserid = require('./utils/userid.js')
 const jwtverify = require('./utils/jwtverify')
 const sc = require('../config')
 const nodeMailer = require('nodemailer')
+const expireDate = '3d'
 
 router.prefix('/api')
 
@@ -155,7 +156,7 @@ router.post('/signin', async (ctx, next) => {
         const token = jwt.sign({
           username,
           userid: res[0].userid
-        }, sc.jwtsecret, { expiresIn: '1h' })
+        }, sc.jwtsecret, { expiresIn: expireDate })
         ctx.body = {
           code: 1,
           msg: '登陆成功',
@@ -181,16 +182,33 @@ router.post('/signin', async (ctx, next) => {
 
 //  用户登陆状态验证
 router.post('/userinfo', async (ctx, next) => {
-  const token = ctx.header.authorization.split(' ')[1]
+  let token = ctx.header.authorization.split(' ')[1]
   const verify = jwtverify(token, sc.jwtsecret)
   await verify.then((data) => {
-    const { username, userid } = data
-    ctx.body = {
-      code: 1,
-      msg: '登陆信息有效',
-      username,
-      userid,
-      token
+    const { username, userid, exp } = data
+    //  单位秒
+    let minTime = 60 * 60 * 12
+    if (exp - Math.round(new Date() / 1000) < minTime) {
+      console.log(exp - Math.round(new Date() / 1000))
+      const newtoken = jwt.sign({
+        username,
+        userid,
+      }, sc.jwtsecret, { expiresIn: expireDate })
+      ctx.body = {
+        code: 1,
+        msg: '登陆信息续签',
+        username,
+        userid,
+        token: newtoken
+      }
+    } else {
+      ctx.body = {
+        code: 1,
+        msg: '登陆信息有效',
+        username,
+        userid,
+        token
+      }
     }
   }).catch((err) => {
     ctx.body = {
