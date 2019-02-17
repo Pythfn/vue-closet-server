@@ -13,14 +13,18 @@ router.post('/additem', async (ctx, next) => {
   await jwtverify(token, sc.jwtsecret).then(async (decoded) => {
     const userid = decoded.userid
     let { name, price, cost, type, size, rate, color, colorcode, tags, cover, pic, picurl, itemlink, remark, isstar, ispublic } = ctx.request.body
-    //  转短链接
-    picurl = await toShortUrl(picurl)
-
     if (userid) {
       try {
+        //  转短链接
+        if (picurl && picurl.length >= 450) {
+          picurl = await toShortUrl(picurl)
+        }
+        if (cover && cover.length >= 100) {
+          cover = await toShortUrl(cover, 'single')
+        }
         let createtime = getFormatDate()
-        const sqlAdd = 'INSERT INTO vcitems(name, price, cost, type, size, rate, color, colorcode, tags, cover, pic, picurl, itemlink, remark, isdelete, userinfo, userid, isstar, ispublic, createtime) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-        const sqlAddValues = [name, price, cost, type, size, rate, color, colorcode, tags, cover, pic, picurl, itemlink, remark, 0, null, userid, isstar, ispublic, createtime]
+        const sqlAdd = 'INSERT INTO vcitems(name, price, cost, type, size, rate, color, colorcode, tags, cover, pic, picurl, itemlink, remark, isdelete, userinfo, userid, isstar, ispublic, createtime, updatetime) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        const sqlAddValues = [name, price, cost, type, size, rate, color, colorcode, tags, cover, pic, picurl, itemlink, remark, 0, null, userid, isstar, ispublic, createtime, createtime]
         const dbAdd = db.query(sqlAdd, sqlAddValues)
         await dbAdd.then((res) => {
           ctx.body = {
@@ -54,9 +58,14 @@ router.post('/updateitem', async (ctx, next) => {
   await verify.then(async (decoded) => {
     const userid = decoded.userid
     let { itemid, name, price, cost, type, size, rate, color, colorcode, tags, cover, pic, picurl, itemlink, remark, isstar, ispublic } = ctx.request.body
-    picurl = await toShortUrl(picurl)
     if (userid) {
       try {
+        if (picurl && picurl.length >= 450) {
+          picurl = await toShortUrl(picurl)
+        }
+        if (cover && cover.length >= 100) {
+          cover = await toShortUrl(cover, 'single')
+        }
         //  修改语句中加入判断userid的条件，防止他人篡改
         let updatetime = getFormatDate()
         let sqlUpdate = "UPDATE vcitems SET name = ?, price = ?, cost = ?, type = ?, size = ?, rate = ?, color = ?, colorcode = ?, tags = ?, cover = ?, pic = ?, picurl = ?, itemlink = ?, remark = ?, isstar = ?, ispublic = ?, updatetime = ? WHERE itemid = ? AND userid = ?"
@@ -126,7 +135,7 @@ router.post('/getitems', async (ctx, next) => {
     const userid = decoded.userid
     if (userid) {
       try {
-        const sqlGet = 'SELECT * FROM vcitems WHERE userid = ? AND isdelete <> 1'
+        const sqlGet = 'SELECT * FROM vcitems WHERE userid = ? AND isdelete <> 1 ORDER BY updatetime DESC'
         await db.query(sqlGet, userid).then((itemlist) => {
           ctx.body = {
             code: 1,
