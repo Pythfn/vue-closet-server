@@ -22,9 +22,15 @@ router.post('/additem', async (ctx, next) => {
         if (cover && cover.length >= 100) {
           cover = await toShortUrl(cover, 'single')
         }
+        const sqlSort = 'SELECT Max(sort) AS MAXSORT FROM vcitems WHERE userid = ?'
+        const sqlSortValues = [userid]
+        let maxSort = -1
+        await db.query(sqlSort, sqlSortValues).then(async (res) => {
+          maxSort = isNaN(res[0].MAXSORT) ? 1 : res[0].MAXSORT + 1
+        })
         let createtime = getFormatDate()
-        const sqlAdd = 'INSERT INTO vcitems(name, price, cost, type, size, rate, color, colorcode, tags, cover, pic, picurl, itemlink, remark, isdelete, userid, isstar, ispublic, createtime, updatetime) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-        const sqlAddValues = [name, price, cost, type, size, rate, color, colorcode, tags, cover, pic, picurl, itemlink, remark, 0, userid, isstar, ispublic, createtime, createtime]
+        const sqlAdd = 'INSERT INTO vcitems(name, price, cost, type, size, rate, color, colorcode, tags, cover, pic, picurl, itemlink, remark, isdelete, userid, isstar, ispublic, createtime, updatetime, sort) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        const sqlAddValues = [name, price, cost, type, size, rate, color, colorcode, tags, cover, pic, picurl, itemlink, remark, 0, userid, isstar, ispublic, createtime, createtime, maxSort]
         const dbAdd = db.query(sqlAdd, sqlAddValues)
         await dbAdd.then((res) => {
           ctx.body = {
