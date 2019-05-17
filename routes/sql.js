@@ -162,4 +162,84 @@ router.post('/getitems', async (ctx, next) => {
     }
 })
 
+//  获取商品接口
+router.post('/getdata', async (ctx, next) => {
+    //校验token，取到userid
+    const token   = ctx.header.authorization.split(' ')[1];
+    const decoded = await jwtverify(token, sc.jwtsecret).catch(err=> {
+        console.log('###JWTERROR### ' + err);
+    });
+
+    if(!decoded) {
+        resbody(ctx, -1, '请重新登陆');
+        return false;
+    }
+    let userid = decoded.userid;
+
+    try {
+        const sqlGet  = 'SELECT * FROM vcitems WHERE userid = ? AND isdelete <> 1 ORDER BY updatetime DESC';
+        let runSqlGet = await db.query(sqlGet, userid);
+
+        const sqlGetGroup = 'SELECT * FROM vcgroup WHERE userid = ?';
+        const sqlGetGroupItem = 'SELECT * FROM vcgroup_item WHERE userid = ?';
+        const runSqlGetGroup = await db.query(sqlGetGroup, userid);
+        const runSqlGetGroupItem = await db.query(sqlGetGroupItem, userid);
+
+        ctx.body = {
+            code: 1,
+            msg: '数据获取成功',
+            userid,
+            itemlist: runSqlGet,
+            grouplist: runSqlGetGroup,
+            groupitem: runSqlGetGroupItem
+         }
+    } catch (err) {
+        console.log('###SQLGETERROR### ' + err);
+        resbody(ctx, -1, '数据获取失败');
+        return false;
+    }
+})
+
+
+router.post('/addgroup', async (ctx, next) => {
+    //校验token，取到userid
+    const token   = ctx.header.authorization.split(' ')[1];
+    const decoded = await jwtverify(token, sc.jwtsecret).catch(err=> {
+        console.log('###JWTERROR### ' + err);
+    });
+
+    if(!decoded) {
+        resbody(ctx, -1, '请重新登陆');
+        return false;
+    }
+    let userid = decoded.userid;
+    let { name, price, cost, rate, color, tags, cover, pic, remark, isstar, ispublic, grouplist } = ctx.request.body;
+    if (grouplist) grouplist = grouplist.split(',');
+
+    try {
+
+        let createtime = getFormatDate();
+        let sqlGAdd = 'INSERT INTO vcgroup(name, price, cost, rate, color, tags, remark, userid, isstar, ispublic, createtime, updatetime) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        let sqlGAddValues = [name, price, cost, rate, color, tags, remark, userid, isstar, ispublic, createtime, createtime];
+        //存入组合表并获取组合id
+        let { insertId }= await db.query(sqlGAdd, sqlGAddValues);
+
+        if (grouplist) {
+            let sqlGIAdd = 'INSERT INTO vcgroup_item(itemid, groupid, sort, userid) VALUES ?';
+            let sqlGIAddValues = [];
+            grouplist.forEach(g => {
+                sqlGIAddValues.push([g, insertId, 0, userid]);
+            })
+
+            let res = await db.query(sqlGIAdd, [sqlGIAddValues]);
+            resbody(ctx, 1, '组合添加成功');
+        }
+
+    } catch (err) {
+        console.log('###SQLGETERROR### ' + err);
+        resbody(ctx, -1, '数据获取失败');
+        return false;
+    }
+})
+
 module.exports = router
